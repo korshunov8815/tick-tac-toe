@@ -1,7 +1,10 @@
 N = 3
 results = {}
+iters = 0;
+optimized = 0;
 
 from operator import itemgetter
+import time
 
 class field:
 
@@ -20,17 +23,17 @@ class field:
 
         return moves
 
-    def getScore(self):
+    def getScore(self, turnNumber):
         winner = self.getWinner()
         if (winner=='X'):
-            return 10
+            return N*N-turnNumber
         elif (winner=='O'):
-            return -10
+            return -N*N+turnNumber
         else:
             return 0;
 
     def gameEnded(self):
-        if (' ' not in self.fieldString or self.getScore()!=0):
+        if (' ' not in self.fieldString or self.getScore(0)!=0):
             return True
         else:
             return False
@@ -50,6 +53,51 @@ class field:
 
     def getString(self):
         return self.fieldString
+
+    def getSymmetryStrings(self):
+
+        fieldString = self.fieldString
+
+        stringList = list(fieldString)
+        symms = []
+
+        #get vertical symmetry
+        for i in range(0,N):
+            for j in range(0,N//2):
+                stringList[i*N+j], stringList[(i+1)*N-j-1] = stringList[(i+1)*N-j-1], stringList[i*N+j]
+        symms.append(''.join(stringList))
+
+
+        #get horizontal symmetry
+        stringList = list(fieldString)
+        for i in range(0,N):
+            for j in range(0,N//2):
+                stringList[j*N+i], stringList[(N-j-1)*N+i] = stringList[(N-j-1)*N+i], stringList[j*N+i]
+        symms.append(''.join(stringList))
+
+
+        '''#get reverse(?) symmetry
+        stringList = list(fieldString)
+        for i in range(0,N*N//2):
+            stringList[i], stringList[N*N-1-i] = stringList[N*N-1-i], stringList[i]
+        symms.append(''.join(stringList))'''
+
+        #get diag1 symmetry
+        stringList = list(fieldString)
+        for i in range(0,N):
+            for j in range(i,N):
+                stringList[i*N+j], stringList[j*N+i] = stringList[j*N+i],stringList[i*N+j]
+        symms.append(''.join(stringList))
+
+        #get diag2 symmetry
+        stringList = list(fieldString)
+        for i in range(0,N):
+            for j in range(0,N-i):
+                stringList[i*N+j], stringList[(N-1-j)*N+(N-1-i)] = stringList[(N-1-j)*N+(N-1-i)],stringList[i*N+j]
+        symms.append(''.join(stringList))
+
+        return symms
+
 
 
     def getWinner(self):
@@ -81,11 +129,21 @@ class field:
         return None
 
 def minimax(fieldString, move, depth):
+    global iters, optimized
+    iters += 1
 
     currentField = field(fieldString);
 
+    symms = currentField.getSymmetryStrings()
+    symmFound = False
+    for symm in symms:
+        if symm in results:
+            optimized+=1
+            currentField = field(symm)
+            symmFound=True
+
     if (currentField.getWinner() is not None):
-        return currentField.getScore()
+        return currentField.getScore(depth)
 
     if (currentField.gameEnded()):
         return 0;
@@ -94,8 +152,8 @@ def minimax(fieldString, move, depth):
     local_scores = []
     score = 0
 
-
     possibleMoves = currentField.getPossibleMoves(move)
+
     for possibleField in possibleMoves:
         if possibleField in results:
             local_scores.append([possibleField,results[possibleField]])
@@ -104,11 +162,12 @@ def minimax(fieldString, move, depth):
             local_scores.append([possibleField,score])
             results[possibleField] = score
 
+    if depth==0:
+        print(local_scores)
 
     #sorting local scores
     local_scores=sorted(local_scores, key=itemgetter(1), reverse=True)
-    if depth==0:
-        print(local_scores)
+
     global mainField
 
     if (depth==0):
@@ -140,6 +199,7 @@ if mainField.getWinner() is not None:
 else:
     print ('Its a draw!')
 
-'''mainField = field('XO XO    ')
-mainField.printField()
-minimax(mainField.getString(),'X',0)'''
+'''mainField = field('X               ')
+symms = mainField.getSymmetryStrings()
+for sym in symms:
+    print(sym)'''
