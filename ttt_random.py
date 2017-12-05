@@ -1,13 +1,12 @@
-N = 3
-maxDepth = 7
+N = 5
+maxDepth = 3
 results = {}
-import random
+import random,re
 nextmove=''
-import re
 
 from operator import itemgetter
-import time
-
+import time, sys
+sys.setrecursionlimit(1000000)
 
 class field:
 
@@ -21,16 +20,19 @@ class field:
         moves = []
         for i in range(0,N*N):
             if fieldString[i]==' ':
-                moves.append(fieldString[:i]+move+fieldString[i+1:])
-
+                moves.append([fieldString[:i]+move.lower()+fieldString[i+1:],'N'])
+            elif fieldString[i].lower()!=move.lower() and str.islower(fieldString[i]):
+                moves.append([fieldString[:i]+move.upper()+fieldString[i+1:],'R'])
         return moves
 
     def getScore(self, turnNumber):
         winner = self.getWinner()
         if (winner=='X'):
             return (N*N-turnNumber)*10**(N-1)
+            #return (N*N)*10**(N-1)
         elif (winner=='O'):
             return (-N*N+turnNumber)*10**(N-1)
+            #return (N*N)*10**(N-1)
         else:
             return 0;
 
@@ -51,7 +53,15 @@ class field:
         print('-'*(4*N+1))
 
     def newMoveString (self,pos,move):
-        return self.fieldString[:pos-1]+move+self.fieldString[pos:]
+        if (self.fieldString[pos-1]==' '):
+            return self.fieldString[:pos-1]+move.lower()+self.fieldString[pos:]
+        else:
+            rand = random.uniform(0,1)
+            print('player is trying to invade another players cell! rand value:',rand)
+            if (rand>0.5):
+                return self.fieldString[:pos-1]+move.upper()+self.fieldString[pos:]
+            else:
+                return self.fieldString
 
     def getString(self):
         return self.fieldString
@@ -102,7 +112,7 @@ class field:
 
     def getSymmetryStrings(self):
 
-        fieldString = self.fieldString
+        fieldString = (self.fieldString).upper()
 
         stringList = list(fieldString)
         symms = []
@@ -148,7 +158,7 @@ class field:
 
     def getWinner(self):
 
-        currentField=self.fieldString
+        currentField=(self.fieldString).upper()
 
         #diag1
         line=currentField[0:N*N:N+1]
@@ -202,13 +212,23 @@ def minimax(fieldString, move, depth, alpha, beta):
     possibleMoves = currentField.getPossibleMoves(move)
 
     for possibleField in possibleMoves:
-        if possibleField in results:
-            score = results[possibleField]
-            local_scores.append([possibleField,score])
+        if possibleField[0] in results:
+            score = results[possibleField[0]]
+            local_scores.append([possibleField[0],score,possibleField[1]])
         else:
-            score = minimax(possibleField, 'X' if (move=='O') else 'O', depth+1, alpha,beta)
-            local_scores.append([possibleField,score])
-            results[possibleField] = score
+            if possibleField[1]=='R':
+                if (depth>50):
+                    return 0
+                else:
+                    #good scenario
+                    score1 = minimax(possibleField[0], 'X' if (move=='O') else 'O', depth+1, alpha,beta)
+                    #bad scenario
+                    score2 = minimax(fieldString, 'X' if (move=='O') else 'O', depth+1, alpha,beta)
+                    score = int((score1+score2)/2)
+            else:
+                score = minimax(possibleField[0], 'X' if (move=='O') else 'O', depth+1, alpha,beta)
+            local_scores.append([possibleField[0],score,possibleField[1]])
+            results[possibleField[0]] = score
 
         '''if (active_turn=='X'):
             if score > alpha:
@@ -222,25 +242,35 @@ def minimax(fieldString, move, depth, alpha, beta):
     if (depth==0):
         print(local_scores, depth, N*N-depth,-N*N+depth )
 
-    if (depth==99999999999):
-        if (active_turn=='X'):
-            return alpha
+    local_scores=sorted(local_scores, key=itemgetter(1), reverse=True)
+    returnField = local_scores[0][0] if (active_turn=='X') else local_scores[-1][0]
+    returnScore = local_scores[0][1] if (active_turn=='X') else local_scores[-1][1]
+    moveType = local_scores[0][2] if (active_turn=='X') else local_scores[-1][2]
+    candidates = []
+
+
+
+    '''for candidate in local_scores:
+        if abs(candidate[1]-returnScore < 0.1):
+            if (depth==0):
+                print('we are appending candidate here , coz ',abs(candidate[1]-returnScore), abs(candidate[1]-returnScore) < 0.1)
+            candidates.append(candidate)
+    suggestion = random.choice(candidates)
+    if (depth==0):
+        print(candidates)'''
+    if (depth==0):
+        if (moveType=='R'):
+            rand = random.uniform(0,1)
+            print ('computer is trying to capture your cell!! rand value', rand)
+            if (rand>0.5):
+                newFieldString = returnField
+            else:
+                newFieldString = fieldString
         else:
-            return beta
-    else:
-        local_scores=sorted(local_scores, key=itemgetter(1), reverse=True)
-        returnScore = local_scores[0][1] if (active_turn=='X') else local_scores[-1][1]
-        candidates = []
-
-        for candidate in local_scores:
-            if candidate[1]==returnScore:
-                candidates.append(candidate)
-        suggestion = random.choice(candidates)
-
-        if (depth==0):
-            field(suggestion[0]).printField()
-            mainField = field(suggestion[0])
-        return suggestion[1]
+            newFieldString= returnField
+        field(newFieldString).printField()
+        mainField = field(newFieldString)
+    return returnScore
 
 
 
@@ -264,8 +294,7 @@ if mainField.getWinner() is not None:
 else:
     print ('Its a draw!')
 
-'''mainField = field('XX XX     ')
-print(mainField.heuristic())
-symms = mainField.getSymmetryStrings()
+'''mainField = field('O   O     ')
+symms = mainField.getPossibleMoves('X')
 for sym in symms:
     print(sym)'''
