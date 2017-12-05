@@ -64,8 +64,8 @@ class field:
         #diag1
         line=currentField[0:N*N:N+1]
         #finding consecutive length - stackoverflow
-        lengthX = len(max(re.compile("(X+X)*").findall(line)))
-        lengthO = len(max(re.compile("(O+O)*").findall(line)))
+        lengthX = line.count('X')
+        lengthO = line.count('O')
         #its pointless to continue row if there is other symbol
         if (lengthO==0):
             points += 10**(lengthX-1)
@@ -73,8 +73,8 @@ class field:
             points -= 10**(lengthO-1)
         #diag2
         line=currentField[N-1:N*N-1:N-1]
-        lengthX = len(max(re.compile("(X+X)*").findall(line)))
-        lengthO = len(max(re.compile("(O+O)*").findall(line)))
+        lengthX = line.count('X')
+        lengthO = line.count('O')
         if (lengthO==0):
             points += 10**(lengthX-1)
         if (lengthX==0):
@@ -82,8 +82,8 @@ class field:
         #verticals
         for i in range (0,N):
             line=currentField[i:N*N:N]
-            lengthX = len(max(re.compile("(X+X)*").findall(line)))
-            lengthO = len(max(re.compile("(O+O)*").findall(line)))
+            lengthX = line.count('X')
+            lengthO = line.count('O')
             if (lengthO==0):
                 points += 10**(lengthX-1)
             if (lengthX==0):
@@ -91,8 +91,8 @@ class field:
         #horizontals
         for i in range (0,N):
             line=currentField[i*N:(i+1)*N]
-            lengthX = len(max(re.compile("(X+X)*").findall(line)))
-            lengthO = len(max(re.compile("(O+O)*").findall(line)))
+            lengthX = line.count('X')
+            lengthO = line.count('O')
             if (lengthO==0):
                 points += 10**(lengthX-1)
             if (lengthX==0):
