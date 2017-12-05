@@ -1,13 +1,13 @@
 N = 3
 results = {}
-iters = 0;
-optimized = 0;
+import random
+nextmove=''
 
 from operator import itemgetter
 import time
 
-class field:
 
+class field:
 
     def __init__(self, fieldString):
         self.fieldString = fieldString
@@ -128,19 +128,17 @@ class field:
 
         return None
 
-def minimax(fieldString, move, depth):
-    global iters, optimized
-    iters += 1
+def minimax(fieldString, move, depth, alpha, beta):
 
     currentField = field(fieldString);
+    global mainField, nextmove
 
     symms = currentField.getSymmetryStrings()
     symmFound = False
     for symm in symms:
         if symm in results:
-            optimized+=1
-            currentField = field(symm)
-            symmFound=True
+            if (depth>0):
+                return results[symm]
 
     if (currentField.getWinner() is not None):
         return currentField.getScore(depth)
@@ -156,34 +154,50 @@ def minimax(fieldString, move, depth):
 
     for possibleField in possibleMoves:
         if possibleField in results:
-            local_scores.append([possibleField,results[possibleField]])
+            score = results[possibleField]
+            local_scores.append([possibleField,score])
         else:
-            score = minimax(possibleField, 'X' if (move=='O') else 'O', depth+1)
+            score = minimax(possibleField, 'X' if (move=='O') else 'O', depth+1, alpha,beta)
             local_scores.append([possibleField,score])
             results[possibleField] = score
 
-    if depth==0:
-        print(local_scores)
+        if (active_turn=='X'):
+            if score > alpha:
+                alpha = score
+        else:
+            if score < beta:
+                beta = score
+        if beta < alpha:
+            break
 
-    #sorting local scores
-    local_scores=sorted(local_scores, key=itemgetter(1), reverse=True)
+    print(local_scores, depth, N*N-depth,-N*N+depth )
 
-    global mainField
+    if (depth==999999990):
+        if (active_turn=='X'):
+            return alpha
+        else:
+            return beta
+    else:
+        local_scores=sorted(local_scores, key=itemgetter(1), reverse=True)
+        returnScore = local_scores[0][1] if (active_turn=='X') else local_scores[-1][1]
+        candidates = []
 
-    if (depth==0):
-        print (field(local_scores[0][0]).printField())
-        mainField = field(local_scores[0][0])
-    if (active_turn=='X'):
-        nextField = local_scores[0][0]
-        return local_scores[0][1]
-    if (active_turn=='O'):
-        nextField = local_scores[-1][0]
-        return local_scores[-1][1]
+        for candidate in local_scores:
+            if candidate[1]==returnScore:
+                candidates.append(candidate)
+                suggestion = random.choice(candidates)
+        if (depth==0):
+            field(suggestion[0]).printField()
+            mainField = field(suggestion[0])
+        return suggestion[1]
+
+
 
 mainField = field(' '*N*N)
 
+
 while (not mainField.gameEnded()):
-    minimax(mainField.getString(),'X',0)
+    minimax(mainField.getString(),'X',0,-99999,99999)
 
     if mainField.gameEnded():
         break;
